@@ -7,7 +7,7 @@ COALESCE
 1. 概述  
     在 [SQL](https://www.baeldung.com/cs/microservices-db-design#1-sql-vs-nosql) 中合并两行涉及将两条记录的数据组合成单条记录。这在数据整合和清理中尤为常见。  
 
-    在本文中，我们将使用 [Baeldung University](https://www.baeldung.com/sql/simple-schema) 数据库中的 `Student` 表来演示合并两行的不同方法。
+    在本文中，我们将使用 [Baeldung University](/1-setup/schema/simple) 数据库中的 `Student` 表来演示合并两行的不同方法。
 
 2. 使用 COALESCE 进行更新  
     一种合并两行的方法是结合 `UPDATE` 语句和 [`COALESCE`](https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html) 函数。`COALESCE` 函数返回其参数列表中的第一个非空值，因此在需要合并某些字段可能为[空](https://dev.mysql.com/doc/refman/8.4/en/problems-with-null.html)的数据时非常有用。  
@@ -38,7 +38,9 @@ COALESCE
         gpa = COALESCE(target.gpa, source.gpa)
     FROM Student AS source
     WHERE target.id = 1011 AND source.id = 1610;
-    ```  
+    ```
+
+    - [ ] You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM Student AS source WHERE target.id = 1011 AND source.id = 1610'
 
     在此场景中，目标行是要保留的行（id = 1011），源行是要合并到目标行的行（id = 1610）。`COALESCE` 函数确保保留第一个非空值。  
 
@@ -131,5 +133,41 @@ COALESCE
 
     最后，外部 `SELECT` 语句从 CTE 中检索合并后的行，显示 Potu Singh 和 Julia Roberts 的整合数据。
 
+    恢复数据：
+
+    ```sql
+    insert into `Student` (`c0`, `c1`, `c2`, `c3`, `c4`, `c5`, `c6`) values (2008, 'Julia Roberts', '1212446677', '2003-06-12', '2022-01-15', '2025-06-15', 3.04), (2017, 'Potu Singh', '1312445677', '2003-03-11', '2022-01-15', NULL, NULL)
+    ```
+
 5. 结论  
-    在本文中，我们探讨了在 SQL 中合并两行的各种方法。通过结合使用 `UPDATE` 和 `COALESCE`、`INSERT INTO SELECT` 以及公用表表达式（CTE），我们可以有效地整合数据并确保数据完整性。  
+    在本文中，我们探讨了在 SQL 中合并两行的各种方法。通过结合使用 `UPDATE` 和 `COALESCE`、`INSERT INTO SELECT` 以及公用表表达式（CTE），我们可以有效地整合数据并确保数据完整性。
+
+    恢复数据：
+
+    ```sql
+    CREATE TEMPORARY TABLE Tmp_Student
+    (
+        id INT PRIMARY KEY NOT null,
+        name VARCHAR (60),
+        national_id BIGINT NOT Null, 
+        birth_date DATE,
+        enrollment_date DATE,
+        graduation_date DATE,
+        gpa FLOAT,
+        UNIQUE (id)
+    );
+    INSERT INTO Tmp_Student (id, name, national_id, birth_date, enrollment_date, graduation_date, gpa) VALUES
+        (1011, 'Vikas Jain', '321345662', '2001-07-18', '2020-01-15', NULL, 3.3),
+        (1610, 'Ritu Raj', '3203455662', '2002-02-05', '2021-01-15', '2025-06-15', NULL),
+        (2008, 'Julia Roberts', '1212446677', '2003-06-12', '2022-01-15', '2025-06-15', 3.04),
+        (2017, 'Potu Singh', '1312445677', '2003-03-11', '2022-01-15', NULL, NULL);
+    UPDATE Student s
+    JOIN Tmp_Student ts ON s.id = ts.id
+    SET
+        s.name = ts.name, 
+        s.national_id = ts.national_id, 
+        s.birth_date = ts.birth_date, 
+        s.enrollment_date = ts.enrollment_date, 
+        s.graduation_date = ts.graduation_date, 
+        s.gpa = ts.gpa;
+    ```
