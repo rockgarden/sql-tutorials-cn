@@ -103,6 +103,7 @@ public static void printWarnings(SQLWarning warning)
 
     if (warning != null) {
         System.out.println("\n---Warning---\n");
+    }
 
     while (warning != null) {
         System.out.println("Message: " + warning.getMessage());
